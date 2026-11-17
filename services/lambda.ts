@@ -35,7 +35,7 @@ export interface LambdaIngestionResponse {
 }
 
 export async function invokeDataCleanerLambda(
-  payload: LambdaIngestionPayload
+  payload: LambdaIngestionPayload,
 ): Promise<LambdaIngestionResponse> {
   const lambdaPayload = {
     Records: [
@@ -49,7 +49,7 @@ export async function invokeDataCleanerLambda(
   };
 
   const invokeCmd = new InvokeCommand({
-    FunctionName: env.AWS_LAMBDA_FUNCTION_NAME,
+    FunctionName: env.SLA_AWS_LAMBDA_FUNCTION_NAME,
     InvocationType: "RequestResponse",
     Payload: Buffer.from(JSON.stringify(lambdaPayload)),
   });
@@ -61,7 +61,7 @@ export async function invokeDataCleanerLambda(
 
   if (lambdaRes.FunctionError) {
     throw new Error(
-      `AWS Lambda error (${lambdaRes.FunctionError}): ${rawPayload}`
+      `AWS Lambda error (${lambdaRes.FunctionError}): ${rawPayload}`,
     );
   }
 
@@ -73,7 +73,7 @@ export async function invokeDataCleanerLambda(
 
   if (lambdaResponse.statusCode && lambdaResponse.statusCode >= 400) {
     throw new Error(
-      bodyObj?.message || bodyObj?.error || "AWS Lambda processing failed."
+      bodyObj?.message || bodyObj?.error || "AWS Lambda processing failed.",
     );
   }
 

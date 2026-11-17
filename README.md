@@ -136,7 +136,7 @@ AWS_REGION=ap-south-1
 AWS_ACCESS_KEY_ID=[your-aws-access-key]
 AWS_SECRET_ACCESS_KEY=[your-aws-secret-key]
 S3_BUCKET_NAME=sla-logs
-AWS_LAMBDA_FUNCTION_NAME=sla-ingestion-worker
+SLA_AWS_LAMBDA_FUNCTION_NAME=sla-ingestion-worker
 AWS_LAMBDA_ROLE_ARN=arn:aws:iam::[account-id]:role/[role-name]
 ```
 

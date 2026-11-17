@@ -47,7 +47,9 @@ async function buildZip(): Promise<Buffer> {
 
 async function waitForActive(name: string) {
   for (let i = 0; i < 15; i++) {
-    const res = await lambda.send(new GetFunctionCommand({ FunctionName: name }));
+    const res = await lambda.send(
+      new GetFunctionCommand({ FunctionName: name }),
+    );
     if (res.Configuration?.State === "Active") return;
     await new Promise((r) => setTimeout(r, 2000));
   }
@@ -59,31 +61,33 @@ async function deploy() {
 
   try {
     const existing = await lambda.send(
-      new GetFunctionCommand({ FunctionName: env.AWS_LAMBDA_FUNCTION_NAME })
+      new GetFunctionCommand({
+        FunctionName: env.SLA_AWS_LAMBDA_FUNCTION_NAME,
+      }),
     );
     functionArn = existing.Configuration!.FunctionArn!;
 
     await lambda.send(
       new UpdateFunctionCodeCommand({
-        FunctionName: env.AWS_LAMBDA_FUNCTION_NAME,
+        FunctionName: env.SLA_AWS_LAMBDA_FUNCTION_NAME,
         ZipFile: zipBuffer,
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 3000));
     await lambda.send(
       new UpdateFunctionConfigurationCommand({
-        FunctionName: env.AWS_LAMBDA_FUNCTION_NAME,
+        FunctionName: env.SLA_AWS_LAMBDA_FUNCTION_NAME,
         Timeout: 30,
         MemorySize: 512,
         Environment: { Variables: { DATABASE_URL: env.DATABASE_URL } },
-      })
+      }),
     );
   } catch (err: any) {
     if (err.name !== "ResourceNotFoundException") throw err;
 
     const res = await lambda.send(
       new CreateFunctionCommand({
-        FunctionName: env.AWS_LAMBDA_FUNCTION_NAME,
+        FunctionName: env.SLA_AWS_LAMBDA_FUNCTION_NAME,
         Runtime: "nodejs20.x",
         Role: env.AWS_LAMBDA_ROLE_ARN,
         Handler: "index.handler",
@@ -91,23 +95,23 @@ async function deploy() {
         Timeout: 30,
         MemorySize: 512,
         Environment: { Variables: { DATABASE_URL: env.DATABASE_URL } },
-      })
+      }),
     );
     functionArn = res.FunctionArn!;
   }
 
-  await waitForActive(env.AWS_LAMBDA_FUNCTION_NAME);
+  await waitForActive(env.SLA_AWS_LAMBDA_FUNCTION_NAME);
 
   // Grant S3 invoke permission (ignore if already added)
   try {
     await lambda.send(
       new AddPermissionCommand({
-        FunctionName: env.AWS_LAMBDA_FUNCTION_NAME,
+        FunctionName: env.SLA_AWS_LAMBDA_FUNCTION_NAME,
         StatementId: "S3InvokeSlaIngestionWorker",
         Action: "lambda:InvokeFunction",
         Principal: "s3.amazonaws.com",
         SourceArn: `arn:aws:s3:::${env.S3_BUCKET_NAME}`,
-      })
+      }),
     );
   } catch (err: any) {
     if (err.name !== "ResourceConflictException") throw err;
@@ -129,10 +133,12 @@ async function deploy() {
           },
         ],
       },
-    })
+    }),
   );
 
-  console.log(`Deployed ${env.AWS_LAMBDA_FUNCTION_NAME} -> S3 trigger active on ${env.S3_BUCKET_NAME}`);
+  console.log(
+    `Deployed ${env.SLA_AWS_LAMBDA_FUNCTION_NAME} -> S3 trigger active on ${env.S3_BUCKET_NAME}`,
+  );
 }
 
 deploy().catch((err) => {
